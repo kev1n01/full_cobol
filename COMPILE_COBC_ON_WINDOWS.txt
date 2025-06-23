@@ -1,0 +1,50 @@
+SOLO ES SI USAS OPENCOBOLIDE Y QUIERES COMPILAR
+1. Agregar a tus variables de entorno la sigueinte ruta:
+ C:\Program Files (x86)\OpenCobolIDE\GnuCOBOL\bin   -> con esto podras compilar ejecutar el cobc.exe desde la terminal
+
+2. Para verificar reinia la terminal y ejecuta el siguient comando para verificar que se agrego con exito: 
+cobc --version 
+
+3. Si intentas compilar con:
+cobc -x nombre_archivo.CBL 
+Te mostrará el error:
+configuration error:
+/mingw/share/gnu-cobol/config\default.conf: No such file or directory
+
+4. Tendrás que pasarle el parametro -conf e indicarle la ruta para el output donde se guardará el .exe con el parametro -o
+cobc -v basesinit.CBL -conf "C:\Program Files (x86)\OpenCobolIDE\GnuCOBOL\config\default.conf" -x -o exes\basesinit.exe
+
+OPCIONAL
+Si no compilar siempre de esta manera, puedes crear un alias function en tu profile de powershell
+Para ello ejecuta:
+
+notepad $PROFILE
+
+y pega lo siguiente:
+
+function combol {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Archivo
+    )
+
+    # Obtener nombre sin extensión
+    $nombre = [System.IO.Path]::GetFileNameWithoutExtension($Archivo)
+
+    # Ruta al archivo default.conf
+    $conf = 'C:\Program Files (x86)\OpenCobolIDE\GnuCOBOL\config\default.conf'
+
+    # Ruta de salida
+    $salida = "exes\$nombre.exe"
+
+    # Ejecutar el comando de compilación
+    cobc -v $Archivo -conf $conf -x -o $salida
+}
+
+Puedes modificar el nombre de la función.
+
+Finalmente reinicia la terminal, y ejecuta combol nombre_archivo.cbl o .cob
+y en la misma ruta se creará el ejecutable dentro de la carpeta exes\nombre_archivo.exe
+
+Ejecutalo con:
+./exes/nombre_archivo.exe
