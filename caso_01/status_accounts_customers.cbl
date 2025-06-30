@@ -5,7 +5,7 @@
       * Tectonics: cobc
       ******************************************************************
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. PSA01.
+       PROGRAM-ID. FILE-HANDLING.
 
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
@@ -15,9 +15,9 @@
                FILE STATUS IS MOVES-STATUS.
            SELECT BALANCES ASSIGN TO 'saldos.txt'
                ORGANIZATION IS LINE SEQUENTIAL.
-           SELECT NEGATIVES ASSIGN TO 'negativos.txt'
+           SELECT NEGATIVES ASSIGN TO 'negativos.dat'
                ORGANIZATION IS LINE SEQUENTIAL.
-           
+
        DATA DIVISION.
        FILE SECTION.
        FD MOVES.
@@ -25,7 +25,7 @@
 
        FD BALANCES.
        01 BALANCE-REGISTER         PIC X(100).
-       
+
        FD NEGATIVES.
        01 NEGATIVE-REGISTER         PIC X(100).
 
@@ -101,4 +101,4 @@
                    INTO NEGATIVE-REGISTER
                WRITE NEGATIVE-REGISTER
            END-IF.
-       END PROGRAM PSA01.
+       END PROGRAM FILE-HANDLING.
