@@ -1,0 +1,57 @@
+      ******************************************************************
+      *  Author: Kevin Arnold 
+      *  Date: 29/06/2025
+      *  Purpose: IMC CALCULATE PROGRAM
+      * Tectonics: cobc
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. P0IMC.
+       AUTHOR. KEVIN ARNOLD.
+       DATE-WRITTEN. 23/06/2025.
+       
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+       
+       DATA DIVISION.
+       FILE SECTION.       
+       WORKING-STORAGE SECTION.
+       01 WS-WEIGHT         PIC 999     VALUE ZEROS.
+       01 WS-HEIGHT         PIC 9V99    VALUE ZEROS.
+       01 WS-IMC            PIC 9(2)V99 VALUE ZEROS.
+       01 WS-VAL-OK         PIC X       VALUE "N".
+      
+       PROCEDURE DIVISION.
+           PERFORM FETCH-DATA UNTIL WS-VAL-OK = 'Y' AND WS-HEIGHT = 2.
+           IF WS-VAL-OK = "Y"
+               PERFORM CALCULATE-IMC
+               PERFORM DISPLAY-IMC
+           ELSE
+               DISPLAY "Error en los datos ingresados. Verifique."
+           END-IF
+           STOP RUN.
+
+       FETCH-DATA.
+           DISPLAY 'Ingresa tu peso en kg (ej. 70): '
+           ACCEPT WS-WEIGHT.
+           DISPLAY 'Ingresa tu altura en metros (ej. 1.75): '
+           ACCEPT WS-HEIGHT.
+           PERFORM VALIDATE-DATA-INPUT.
+       VALIDATE-DATA-INPUT.
+           IF WS-WEIGHT > 20 AND WS-WEIGHT < 300
+              AND WS-HEIGHT > 0.90 AND WS-HEIGHT < 2.50
+               MOVE "Y" TO WS-VAL-OK
+               DISPLAY "Datos de entrada validados OK."
+           ELSE
+               MOVE "N" TO WS-VAL-OK
+               DISPLAY "Peso o altura fuera de rango válido."
+           END-IF.
+       CALCULATE-IMC.
+           COMPUTE WS-IMC = WS-WEIGHT / (WS-HEIGHT * WS-HEIGHT).
+       DISPLAY-IMC.
+           DISPLAY "TU IMC ES: " WS-IMC.
+
+       END PROGRAM P0IMC.
+
+
