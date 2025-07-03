@@ -47,8 +47,8 @@
            BLOCK CONTAINS 0 RECORDS
            RECORDING MODE IS F.
        01  REG-FFECACTI.
-           02 CDC-FECACTI   PIC X(08).
-           02 CDC-PANINNO   PIC X(21).
+           02 CDC-FECACTI   PIC X(08). *>FECHA ACTIVACION TARJ
+           02 CDC-PANINNO   PIC X(21). *>PAN INNOMINADA
 
        FD  FECACTVO
            LABEL RECORD IS STANDARD
@@ -57,7 +57,7 @@
        01  REG-SALIDA             PIC X(312).
            COPY CDCFDREP REPLACING LEADING ==CDC== BY ==REP==.
            02 REP-NUMPLAST        PIC 9(12).
-           02 REP-NUMBEN          PIC 9(05).
+           02 REP-NUMBEN          PIC 9(05).   
            02 REP-LINEVENT        PIC X(02).
 
       *========================*
@@ -85,10 +85,9 @@
           05 WSC-16              PIC  9(02)  VALUE 16.
 
        01 WSA-ACUMULADORES.
-          05 WSV-CONT-ACFI1      PIC  9(07) COMP
-                                             VALUE ZEROS.
+          05 WSV-CONT-ACFI1      PIC  9(07) COMP VALUE ZEROS.
           05 WSV-CONT-ACFI2      PIC  9(07) COMP
-                                             VALUE ZEROS.
+     -     VALUE ZEROS.
           05 WSV-CONT-ACFO1      PIC  9(07) COMP
                                              VALUE ZEROS.
 
@@ -174,7 +173,7 @@
            READ FTOTT09I
            AT END
               SET FIN-FTOTT09I-OK TO TRUE
-              MOVE '9999999999999999999999' TO CDC-PAN
+              MOVE '9999999999999999999999' TO CDC-PAN *>x22
            END-READ.
            EVALUATE FS-FTOTT09I
            WHEN WSC-00
@@ -194,7 +193,7 @@
            READ FFECACTI
            AT END
               SET FIN-FFECACTI-OK TO TRUE
-              MOVE '9999999999999999999999' TO CDC-PANINNO
+              MOVE '9999999999999999999999' TO CDC-PANINNO *>x22->VARx21
            END-READ.
            EVALUATE FS-FFECACTI
            WHEN WSC-00
@@ -202,7 +201,7 @@
            WHEN WSC-10
                 SET FIN-FFECACTI-OK TO TRUE
            WHEN OTHER
-                MOVE '1004-READ-FFECACTI' TO WSV-RUTINA
+                MOVE '1004-READ-FFECACTI' TO WSV-RUTINA *> seria 1002
                 MOVE 'READ FFECACTI' TO WSV-ACCION
                 MOVE FS-FFECACTI TO WSV-FSTATUS
                 PERFORM 9000-ERROR-PGM
@@ -256,15 +255,15 @@
            MOVE REG-DATAREPO TO REG-SALIDA
 
            IF SW-MATCH-SI
-                MOVE CDC-FECACTI  TO REP-FEC-ACUSE-TAR
-                MOVE FEC-ACT1     TO REP-TEC-TARJ
-                MOVE TIP-VEN2     TO REP-LINEVENT
+                MOVE CDC-FECACTI  TO REP-FEC-ACUSE-TAR *> FECHA ACTIVE
+                MOVE FEC-ACT1     TO REP-TEC-TARJ *>TECNOLOGIA TARJETA
+                MOVE TIP-VEN2     TO REP-LINEVENT *> TIPO VENTA
 512972          PERFORM 2004-GRABAR-SALIDA
            END-IF
            IF SW-NO-MATCH-SI
-                MOVE TIP-VEN1 TO REP-LINEVENT
-                MOVE FEC-ACT2 TO REP-TEC-TARJ
-                MOVE FEC-SPAC TO REP-FEC-ACUSE-TAR
+                MOVE TIP-VEN1 TO REP-LINEVENT *>asign P
+                MOVE FEC-ACT2 TO REP-TEC-TARJ *>asign spaces o NULL
+                MOVE FEC-SPAC TO REP-FEC-ACUSE-TAR *>asign spaces o NULL
 512972          PERFORM 2004-GRABAR-SALIDA
            END-IF
 512972*    IF SW-GRABAR-SI
@@ -301,7 +300,7 @@
               (FS-FECACTVO = '00')
               CONTINUE
            ELSE
-              DISPLAY ' ERROR AL ABRIR ARCHIVOS  '
+              DISPLAY ' ERROR AL ABRIR ARCHIVOS  ' *> abrir o cerrar?
               DISPLAY ' FS-FTOTT09I ............. = ' FS-FTOTT09I
               DISPLAY ' FS-FFECACTI ............. = ' FS-FFECACTI
               DISPLAY ' FS-FECACTVO ............. = ' FS-FECACTVO

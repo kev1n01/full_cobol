@@ -5,8 +5,9 @@
       *    COPY     : CDCFDREP                                      *
       *    REGISTRO : ARCHIVOS PARA DATA REPORTERÍA                 *
       *    LONGITUD : 293 BYTES                                     *
+      *    CAMPOS   : 26                                            *
       *-------------------------------------------------------------*
-       01  REG-CDCFDREP.
+       02  REG-CDCFDREP.
       * CODIGO UNICO TITULAR
            03  CDC-CU-TIT         PIC 9(10) VALUE ZEROES.
            03  CDC-FILLER01       PIC X(01).
@@ -69,10 +70,10 @@
       * FLUJO ALTA TARJ
            03  CDC-FLUJO-ALT-TAR  PIC X(15).
            03  CDC-FILLER20       PIC X(01).
-      * CANAL ALT TARJ
+      * CANAL ALTA TARJ
            03  CDC-CANAL-ALT-TAR  PIC X(10).
            03  CDC-FILLER21       PIC X(01).
-      * FECHA ALT TARJ
+      * FECHA ALTA TARJ
            03  CDC-FEC-ALT-TAR    PIC 9(08).
            03  CDC-FILLER22       PIC X(01).
       * FECHA ACUSE TARJ
