@@ -1,3 +1,4 @@
+/basics/init_structure
 /exes
 caso_01/status_accounts_customers
 caso_01/negativos.dat
@@ -6,3 +7,5 @@ caso_01/saldos.dat
 caso_01/saldos.txt
 caso_02/imc_calculate
 Kevin/CDCEXE
+Kevin/FECACTVO.dat
+programs
