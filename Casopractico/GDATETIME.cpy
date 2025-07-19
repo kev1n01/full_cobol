@@ -1,0 +1,3 @@
+           UNSTRING FUNCTION CURRENT-DATE
+              INTO NOW-ANO NOW-MES NOW-DIA
+           END-UNSTRING.
