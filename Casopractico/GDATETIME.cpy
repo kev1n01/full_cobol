@@ -1,3 +1,9 @@
            UNSTRING FUNCTION CURRENT-DATE
-              INTO NOW-ANO NOW-MES NOW-DIA
+              INTO WS-YYYY WS-MM WS-DD HH MM SS
            END-UNSTRING.
+
+           STRING 
+              WS-YYYY DELIMITED BY SIZE 
+              WS-MM DELIMITED BY SIZE 
+              WS-DD DELIMITED BY SIZE 
+              INTO WS-FECHA-YYYYMMDD.
