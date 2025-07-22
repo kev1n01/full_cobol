@@ -1,6 +1,6 @@
        IDENTIFICATION DIVISION.
        PROGRAM-ID.  PROGRAM1.
-       AUTHOR. KEVIN ARNOLD. 
+       AUTHOR. KEVIN ARNOLD.
        
        ENVIRONMENT DIVISION. 
        INPUT-OUTPUT SECTION.
@@ -8,31 +8,36 @@
       *    ARCHIVO DE ENTRADA DE CUENTA DE TARJETA
            SELECT FILINP1 ASSIGN TO 'FILINP1.txt' 
               ORGANIZATION IS LINE SEQUENTIAL
-                FILE STATUS IS FS-FILINP1.
+              ACCESS MODE IS SEQUENTIAL
+              FILE STATUS IS FS-FILINP1.
       *    ARCHIVO DE ENTRADA DE INFORMACION DE TARJETA
            SELECT FILINP2 ASSIGN TO 'FILINP2.txt' 
               ORGANIZATION IS LINE SEQUENTIAL
-                FILE STATUS IS FS-FILINP2.
+              ACCESS MODE IS SEQUENTIAL
+              FILE STATUS IS FS-FILINP2.
       *    ARCHIVO DE SALIDA DE SOLO TARJETAS VISA
            SELECT FILOUT1 ASSIGN TO 'FILOUT1.txt'
               ORGANIZATION IS LINE SEQUENTIAL
+              ACCESS MODE IS SEQUENTIAL
               FILE STATUS IS FS-FILOUT1.
       *    ARCHIVO DE SALIDA DE REPORTE DE CUENTAS BLOQUEADAS 
-      *    DE HACE UN MES HASTA LA FECHA 
            SELECT FILOUT2 ASSIGN TO 'FILOUT2.txt'
               ORGANIZATION IS LINE SEQUENTIAL
+              ACCESS MODE IS SEQUENTIAL
               FILE STATUS IS FS-FILOUT2.
 
        DATA DIVISION.
        FILE SECTION. 
-       FD  FILINP1.
+       FD  FILINP1
+           RECORDING MODE IS F.
        01  REG-IN01.
            02 ACC-COD-ENT       PIC X(4). *> CODIO DE ENTIDAD
            02 ACC-CENT-ALTA     PIC X(4). *> CENTRO DE ALTA
            02 ACC-NUMB          PIC X(12). *> CUENTA
            02 ACC-PAN           PIC X(22). *> NUMERO TARJETA (PAN)
            
-       FD  FILINP2.
+       FD  FILINP2
+           RECORDING MODE IS F.
        01  REG-IN02.
            02 INF-PAN          PIC X(22). *> NUMERO TARJETA (PAN)
            02 INF-COD-MAR      PIC 9(2). *> CODIGO DE MARCA
@@ -42,7 +47,8 @@
            02 INF-FEC-BLOQ     PIC X(10). *> FECHA DE BLOQUEO
            02 INF-COD-BLOQ     PIC 9(2). *> CODIGO DE BLOQUEO
 
-       FD  FILOUT1.
+       FD  FILOUT1
+           RECORDING MODE IS F.
        01  REG-OU01.
            02 VIS-COD-ENT       PIC X(4). *> CODIO DE ENTIDAD
            02 VIS-CENT-ALTA     PIC X(4). *> CENTRO DE ALTA
@@ -52,7 +58,8 @@
            02 VIS-FEC-BLOQ      PIC X(10). *> FECHA DE BLOQUEO
            02 VIS-DES-BLOQ      PIC X(30). *> DESCRIPCION DE BLOQUEO
 
-       FD  FILOUT2.
+       FD  FILOUT2
+           RECORDING MODE IS F.
        01  REG-OU02.
            02 REP-NUMB          PIC X(12). *> CUENTA
            02 REP-PAN           PIC X(16). *> NUMERO TARJETA (PAN)
@@ -69,156 +76,301 @@
 
       *VARIABLES PARA CONTAR REGISTROS DE ENTRADA Y SALIDA
        01 WSC-COUNTERS.
-           05 CONT-FILINP1      PIC  9(07) COMP VALUE ZEROS.
-           05 CONT-FILINP2      PIC  9(07) COMP VALUE ZEROS.
-           05 CONT-FILOUT1      PIC  9(07) COMP VALUE ZEROS.
-           05 CONT-FILOUT2      PIC  9(07) COMP VALUE ZEROS.
+           05 COUNT-FILINP1      PIC  9(07) COMP VALUE ZEROS.
+           05 COUNT-FILINP2      PIC  9(07) COMP VALUE ZEROS.
+           05 COUNT-FILOUT1      PIC  9(07) COMP VALUE ZEROS.
+           05 COUNT-FILOUT2      PIC  9(07) COMP VALUE ZEROS.
+           05 COUNT-MATCHES      PIC  9(07) COMP VALUE ZEROS.
        
       *VARIABLES PARA CONTROLAR FIN DE LECTURA
-       01 EOFILINP1                       PIC X VALUE 'N'.
-       01 EOFILINP2                       PIC X VALUE 'N'.
+       01 EOF-FLAGS.
+           05 EOF-FILINP1                 PIC X VALUE 'N'.
+           05 EOF-FILINP2                 PIC X VALUE 'N'.
       
-      * Variables auxiliares
-       01 WS-DES-MARCA          PIC X(30).
-       01 WS-DES-BLOQ           PIC X(30).
-       01 WS-FEC-BLOQ           PIC 9(10).
-           02 FQ-DIA             PIC 9(02).
-           02 FILLER              PIC X(01)   VALUE '/'.
-           02 FQ-MES             PIC 9(02).
-           02 FILLER              PIC X(01)   VALUE '/'.
-           02 FQ-ANO             PIC X(04).
+      *VARIABLES AUXILIARES
+       01 WS-VARIABLES.
+           05 WS-DES-MARCA          PIC X(30).
+           05 WS-DES-BLOQ           PIC X(30).
+           05 WS-PAN-16             PIC X(16).
+           05 WS-MATCH-FOUND        PIC X VALUE 'N'.
 
-      *VARIABLES PARA FECHA DE SALIDA FORMATO DD/MM/YYYY
-       01 NOW-DATE.
-           02 NOW-DIA             PIC 9(02).
-           02 FILLER              PIC X(01)   VALUE '/'.
-           02 NOW-MES             PIC 9(02).
-           02 FILLER              PIC X(01)   VALUE '/'.
-           02 NOW-ANO             PIC X(04).
-       
-      *VARABILES DE ENTEROS DE FECHA
-       01 WS-HOY-YYYYMMDD       PIC 9(8).
-       01 WS-HOY-INT            PIC S9(9) COMP VALUE 0.
-       01 WS-LIM-INT            PIC S9(9) COMP VALUE 0.
-       01 WS-BLOQ-INT           PIC S9(9) COMP VALUE 0.
+      *VARIABLES PARA MANEJO DE FECHAS
+       01 WS-FECHA-ACTUAL.
+           05 WS-FECHA-YYYYMMDD     PIC 9(8).
+           05 WS-FECHA-REPORT.
+               10 WR-DD             PIC 9(2).
+               10 FILLER            PIC X VALUE '/'.
+               10 WR-MM             PIC 9(2).
+               10 FILLER            PIC X VALUE '/'.
+               10 WR-YYYY           PIC 9(4).
+      *    VARIABLES PARA MOSTRAR FECHA Y HORA ACTUAL - REFACTOR
+           05 WS-FECHA-DISPLAY.
+               10 WS-DD             PIC 9(2).
+               10 FILLER            PIC X VALUE '/'.
+               10 WS-MM             PIC 9(2).
+               10 FILLER            PIC X VALUE '/'.
+               10 WS-YYYY           PIC 9(4).
+           05 WS-HORA-DISPLAY.
+              10 HH                  PIC 9(02).
+              10 FILLER              PIC X(01)   VALUE ':'.
+              10 MM                  PIC 9(02).
+              10 FILLER              PIC X(01)   VALUE ':'.
+              10 SS                  PIC 9(02).
 
-      *  CONSTANTES PARA DESCRIPCION DE MARCA
-       01 WS-MARCA-01           PIC X(30) VALUE 'VISA'.
-       01 WS-MARCA-02           PIC X(30) VALUE 'AMERICAN EXPRESS'.
-       01 WS-MARCA-03           PIC X(30) VALUE 'MARCA PRIVADA'.
-       01 WS-MARCA-04           PIC X(30) VALUE 'MASTERCARD'.
+      *VARIABLES PARA ALMACENAR FECHAS ENTEROS
+       01 WS-FECHA-BLOQ-NUM         PIC 9(8).
+       01 WS-FECHA-UN-MES-ATRAS     PIC 9(8) COMP VALUE 0.
+
+      *TABLA PARA ALMACENAR REGISTROS DE FILINP1 EN MEMORIA CON INDEX
+       01 WS-TABLA-CUENTAS.
+           05 WS-MAX-REGISTROS      PIC 9(7) COMP VALUE 1065248.
+           05 WS-CANT-REGISTROS     PIC 9(7) COMP VALUE ZEROS.
+           05 WS-CUENTAS OCCURS 1065248 TIMES INDEXED BY WS-IDX.
+               10 WS-ACC-COD-ENT    PIC X(4).
+               10 WS-ACC-CENT-ALTA  PIC X(4).
+               10 WS-ACC-NUMB       PIC X(12).
+               10 WS-ACC-PAN        PIC X(22).
 
        PROCEDURE DIVISION.
-      *    PRCOESOS PARA FILTRO DE FECHA
-           MOVE FUNCTION CURRENT-DATE(1:8) TO WS-HOY-YYYYMMDD.
-           COMPUTE WS-HOY-INT = FUNCTION INTEGER-OF-DATE 
-              (WS-HOY-YYYYMMDD).
-           MOVE WS-HOY-YYYYMMDD(7:2) TO NOW-DIA.
-           MOVE WS-HOY-YYYYMMDD(5:2) TO NOW-MES.
-           MOVE WS-HOY-YYYYMMDD(1:4) TO NOW-ANO.
-
-      *    ULTIMOS 30 DIAS
-           COMPUTE WS-LIM-INT = WS-HOY-INT - 30.
-
-           OPEN INPUT FILINP1 FILINP2 
-                 OUTPUT FILOUT1 FILOUT2.
-
-           PERFORM CARGAR-FILINP2.
-           
-           PERFORM LEER-FILINP1.
-           
-           PERFORM UNTIL EOFILINP1 = 'S'
-               PERFORM PROCESAR-REGISTRO
-               PERFORM LEER-FILINP1
-           END-PERFORM.
-
-           CLOSE FILINP1 FILINP2 FILOUT1 FILOUT2.
-           PERFORM DISPLAY-DETAILS
+       0000-MAIN-PROCESS.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-CARGAR-TABLA-CUENTAS
+           PERFORM 3000-PROCESAR-TARJETAS
+           PERFORM 9000-FINALIZAR
            STOP RUN.
-       
-       LEER-FILINP1.
+
+      *----------------------------------------------------------------+
+       1000-INICIALIZAR.
+      *----------------------------------------------------------------+
+           DISPLAY '======================================='
+           DISPLAY '  INICIANDO PROCESAMIENTO DE TARJETAS  '
+           DISPLAY '======================================='
+           PERFORM 1100-OBTENER-FECHA-ACTUAL
+           PERFORM 1200-CALCULAR-FECHA-UN-MES
+           PERFORM 1300-PREPARAR-ARCHIVOS.
+
+      *----------------------------------------------------------------+
+       1100-OBTENER-FECHA-ACTUAL.
+      *----------------------------------------------------------------+
+           COPY GDATETIME.
+
+      *----------------------------------------------------------------+
+       1200-CALCULAR-FECHA-UN-MES.
+      *----------------------------------------------------------------+
+      *    CALCULANDO FECHA DE HACE UN MES -> INTEGER-OF-DATE
+      *    CONVIRTIENDO FECHA ACTUAL A ENTERO Y RESTANDOLE 30 DIAS
+           COMPUTE WS-FECHA-UN-MES-ATRAS = 
+               FUNCTION INTEGER-OF-DATE(WS-FECHA-YYYYMMDD) - 30
+      *    CONVIRTIENDO ENTERO A FECHA
+           COMPUTE WS-FECHA-UN-MES-ATRAS = 
+               FUNCTION DATE-OF-INTEGER(WS-FECHA-UN-MES-ATRAS).
+
+      *----------------------------------------------------------------+
+       1300-PREPARAR-ARCHIVOS.
+      *----------------------------------------------------------------+
+           OPEN INPUT FILINP1 FILINP2 
+           OPEN OUTPUT FILOUT1 FILOUT2
+           IF FS-FILINP1 NOT = '00' OR FS-FILINP2 NOT = '00' OR
+              FS-FILOUT1 NOT = '00' OR FS-FILOUT2 NOT = '00'
+               DISPLAY 'ERROR AL ABRIR ARCHIVOS'
+               STOP RUN
+           END-IF.
+
+      *----------------------------------------------------------------+
+       2000-CARGAR-TABLA-CUENTAS.
+      *----------------------------------------------------------------+
+           DISPLAY '======================================='
+           DISPLAY '       CARGANDO TABLA DE CUENTAS       '
+           DISPLAY '======================================='
+           PERFORM 2100-LEER-FILINP1
+           PERFORM UNTIL EOF-FILINP1 = 'S' 
+                       OR WS-CANT-REGISTROS >= WS-MAX-REGISTROS
+               PERFORM 2200-GUARDAR-EN-TABLA
+               PERFORM 2100-LEER-FILINP1
+           END-PERFORM
+           DISPLAY '======================================='
+           DISPLAY '   CUENTAS CARGADAS: ' WS-CANT-REGISTROS
+           DISPLAY '======================================='.
+
+      *----------------------------------------------------------------+
+       2100-LEER-FILINP1.
+      *----------------------------------------------------------------+
            READ FILINP1
-               AT END MOVE 'S' TO EOFILINP1
-               NOT AT END ADD 1 TO CONT-FILINP1
+               AT END 
+                 MOVE 'S' TO EOF-FILINP1
+               NOT AT END 
+                 ADD 1 TO COUNT-FILINP1
            END-READ.
 
-       CARGAR-FILINP2.
-           PERFORM UNTIL EOFILINP2 = 'S'
-              READ FILINP2
-                 AT END MOVE 'S' TO EOFILINP2
-                 NOT AT END
-                    ADD 1 TO CONT-FILINP2
-      *             ADD 1 TO WS-FILINP2-CNT
-      *             MOVE REG-IN02 TO WS-FILINP2-ENTRY (WS-FILINP2-CNT)
-              END-READ
+      *----------------------------------------------------------------+
+       2200-GUARDAR-EN-TABLA.
+      *----------------------------------------------------------------+
+           ADD 1 TO WS-CANT-REGISTROS
+           SET WS-IDX TO WS-CANT-REGISTROS
+           MOVE ACC-COD-ENT TO WS-ACC-COD-ENT(WS-IDX)
+           MOVE ACC-CENT-ALTA TO WS-ACC-CENT-ALTA(WS-IDX)
+           MOVE ACC-NUMB TO WS-ACC-NUMB(WS-IDX)
+           MOVE ACC-PAN TO WS-ACC-PAN(WS-IDX).
+
+      *----------------------------------------------------------------+
+       3000-PROCESAR-TARJETAS.
+      *----------------------------------------------------------------+
+           DISPLAY '======================================='
+           DISPLAY '  PROCESANDO INFORMACION DE TARJETAS   '
+           DISPLAY '======================================='
+           PERFORM 3100-LEER-FILINP2
+           PERFORM UNTIL EOF-FILINP2 = 'S'
+               PERFORM 3200-BUSCAR-CUENTA-POR-PAN
+               IF WS-MATCH-FOUND = 'S'
+                   PERFORM 3300-PROCESAR-MATCH
+               END-IF
+               PERFORM 3100-LEER-FILINP2
+           END-PERFORM
+      *    DISPLAY 'MATCHES ENCONTRADOS: ' COUNT-MATCHES
+           .
+
+      *----------------------------------------------------------------+
+       3100-LEER-FILINP2.
+      *----------------------------------------------------------------+
+           READ FILINP2
+               AT END 
+                 MOVE 'S' TO EOF-FILINP2
+               NOT AT END 
+                 ADD 1 TO COUNT-FILINP2
+           END-READ.
+           
+      *----------------------------------------------------------------+
+       3200-BUSCAR-CUENTA-POR-PAN.
+      *----------------------------------------------------------------+
+           MOVE 'N' TO WS-MATCH-FOUND
+           SET WS-IDX TO 1 *> REINICIA EL VALOR DEL INDICE A LA POS 1
+           PERFORM UNTIL WS-IDX > WS-CANT-REGISTROS OR 
+                         WS-MATCH-FOUND = 'S'
+               IF INF-PAN = WS-ACC-PAN(WS-IDX)
+                   MOVE 'S' TO WS-MATCH-FOUND
+                   ADD 1 TO COUNT-MATCHES
+               ELSE
+                   SET WS-IDX UP BY 1 *> INCREMENTA EL INDICE +1 POS
+               END-IF
            END-PERFORM.
 
-       PROCESAR-REGISTRO.
-      *FILTRO PARA OBTENER TARJETAS DE MARCA VISA
-           EVALUATE INF-COD-MAR
-              WHEN 01
-                 PERFORM OBTENER-DESC-MARCA
-      *          Desectructurando fecha de bloque en WS-FEC-BLOQ
-                 UNSTRING INF-FEC-BLOQ DELIMITED BY "."
-                    INTO FQ-DIA FQ-MES FQ-ANO
-                 END-UNSTRING
-                 PERFORM OBTENER-DESC-BLOQUEO
-                 PERFORM GRABAR-FILOUT1
-                 PERFORM OBTENER-BLOQ-MES
-              WHEN OTHER
-      *       FILTOR DE CUENTAS BLOQUEADAS
-                 PERFORM OBTENER-BLOQ-MES
-           END-EVALUATE.
-       
-       OBTENER-BLOQ-MES.
-           IF WS-BLOQ-INT > 0
-              AND WS-BLOQ-INT >= WS-LIM-INT
-              AND WS-BLOQ-INT <= WS-HOY-INT
-              AND WS-DES-BLOQ NOT = 'TARJETA ACTIVA'
-              PERFORM GRABAR-FILOUT2
+      *----------------------------------------------------------------+
+       3300-PROCESAR-MATCH.
+      *----------------------------------------------------------------+
+           PERFORM 3400-EVALUAR-PARA-FILOUT1
+           PERFORM 3500-EVALUAR-PARA-FILOUT2.
+
+      *----------------------------------------------------------------+
+       3400-EVALUAR-PARA-FILOUT1.
+      *----------------------------------------------------------------+
+           IF INF-COD-MAR = 01
+               PERFORM 3410-ESCRIBIR-FILOUT1
            END-IF.
-       
-       OBTENER-DESC-MARCA.
-           EVALUATE INF-COD-MAR
-              WHEN 01 MOVE WS-MARCA-01 TO WS-DES-MARCA
-              WHEN 02 MOVE WS-MARCA-02 TO WS-DES-MARCA
-              WHEN 03 MOVE WS-MARCA-03 TO WS-DES-MARCA
-              WHEN 04 MOVE WS-MARCA-04 TO WS-DES-MARCA
-              WHEN OTHER MOVE SPACES    TO WS-DES-MARCA
-           END-EVALUATE.
 
-       OBTENER-DESC-BLOQUEO.
-           COPY EVDESBLOQ.
-       
-       GRABAR-FILOUT1.
-           MOVE ACC-COD-ENT   TO VIS-COD-ENT
-           MOVE ACC-CENT-ALTA TO VIS-CENT-ALTA
-           MOVE ACC-NUMB      TO VIS-NUMB
-           MOVE ACC-PAN(1:16) TO VIS-PAN
-           MOVE WS-DES-MARCA  TO VIS-DES-MAR
-           MOVE INF-FEC-BLOQ  TO VIS-FEC-BLOQ
-           MOVE WS-DES-BLOQ TO VIS-DES-BLOQ
+      *----------------------------------------------------------------+
+       3410-ESCRIBIR-FILOUT1.
+      *----------------------------------------------------------------+
+           PERFORM 4100-OBTENER-DESC-MARCA
+           PERFORM 4200-OBTENER-DESC-BLOQUEO
+          
+           MOVE INF-PAN(1:16) TO WS-PAN-16 
+           MOVE WS-ACC-COD-ENT(WS-IDX) TO VIS-COD-ENT
+           MOVE WS-ACC-CENT-ALTA(WS-IDX) TO VIS-CENT-ALTA
+           MOVE WS-ACC-NUMB(WS-IDX) TO VIS-NUMB
+           MOVE WS-PAN-16 TO VIS-PAN
+           MOVE WS-DES-MARCA TO VIS-DES-MAR   
+           MOVE INF-FEC-BLOQ TO VIS-FEC-BLOQ 
+           MOVE WS-DES-BLOQ TO VIS-DES-BLOQ   
+           
            WRITE REG-OU01
-           ADD 1 TO CONT-FILOUT1.
+           ADD 1 TO COUNT-FILOUT1.
 
-       GRABAR-FILOUT2.
-           MOVE ACC-NUMB      TO REP-NUMB
-           MOVE ACC-PAN(1:16) TO REP-PAN
-           MOVE INF-FEC-BLOQ  TO REP-FEC-BLOQ
-           MOVE WS-DES-BLOQ TO REP-DES-BLOQ
+      *----------------------------------------------------------------+
+       3500-EVALUAR-PARA-FILOUT2.
+      *----------------------------------------------------------------+
+           IF INF-COD-BLOQ NOT = 00
+               PERFORM 3510-VERIFICAR-FECHA-BLOQUEO
+           END-IF.
+
+      *----------------------------------------------------------------+
+       3510-VERIFICAR-FECHA-BLOQUEO.
+      *----------------------------------------------------------------+
+           PERFORM 4300-CONVERTIR-FECHA-BLOQ-NUM
+           
+      *    VERIFICAR SI SE BLOQUEO HACE UN MES
+           IF WS-FECHA-BLOQ-NUM >= WS-FECHA-UN-MES-ATRAS AND
+              WS-FECHA-BLOQ-NUM <= WS-FECHA-YYYYMMDD
+      *        DISPLAY "SE ENCONTRO BLOQUEO HACE UN MES"
+               PERFORM 3520-ESCRIBIR-FILOUT2
+           END-IF.
+           
+      *----------------------------------------------------------------+
+       3520-ESCRIBIR-FILOUT2.
+      *----------------------------------------------------------------+
+           PERFORM 4200-OBTENER-DESC-BLOQUEO
+           PERFORM 4400-FORMAT-FECHA-PARA-REPORTE
+           
+           MOVE INF-PAN(1:16) TO WS-PAN-16
+           
+           MOVE WS-ACC-NUMB(WS-IDX) TO REP-NUMB
+           MOVE WS-PAN-16 TO REP-PAN 
+           MOVE WS-FECHA-REPORT TO REP-FEC-BLOQ 
+           MOVE WS-DES-BLOQ TO REP-DES-BLOQ   
+           
            WRITE REG-OU02
-           ADD 1 TO CONT-FILOUT2.
+           ADD 1 TO COUNT-FILOUT2.
 
-       DISPLAY-DETAILS.
-           DISPLAY 'FECHA DE EJECUCION' NOW-DATE 
-           DISPLAY '================================='
-           DISPLAY '------- DETALLES PROCESO --------'
-           DISPLAY '================================='
-           DISPLAY 'REG. LEIDOS FILINP1 = ' CONT-FILINP1
-           DISPLAY 'REG. LEIDOS FILINP2 = ' CONT-FILINP2
-           DISPLAY 'REG. GRABAD FILOUT1 = ' CONT-FILOUT1
-           DISPLAY 'REG. GRABAD FILOUT2 = ' CONT-FILOUT2
-           DISPLAY '================================='
-           DISPLAY '================================='
-           DISPLAY '--------- FIN DETALLES ----------'
-           DISPLAY '================================='.
+      *----------------------------------------------------------------+
+       4100-OBTENER-DESC-MARCA.
+      *----------------------------------------------------------------+
+           COPY EVDESMAR.
+
+      *----------------------------------------------------------------+
+       4200-OBTENER-DESC-BLOQUEO.
+      *----------------------------------------------------------------+
+           COPY EVDESBLOQ.
+
+      *----------------------------------------------------------------+
+       4300-CONVERTIR-FECHA-BLOQ-NUM.
+      *----------------------------------------------------------------+
+      *    DD.MM.YYYY -> YYYYMMDD
+           MOVE ZEROS TO WS-FECHA-BLOQ-NUM
+           IF INF-FEC-BLOQ NOT = SPACES AND INF-FEC-BLOQ NOT = ZEROS
+               MOVE INF-FEC-BLOQ(7:4) TO WS-FECHA-BLOQ-NUM(1:4) *> YYYY
+               MOVE INF-FEC-BLOQ(4:2) TO WS-FECHA-BLOQ-NUM(5:2) *> MM
+               MOVE INF-FEC-BLOQ(1:2) TO WS-FECHA-BLOQ-NUM(7:2) *> DD
+           END-IF.
+
+      *----------------------------------------------------------------+
+       4400-FORMAT-FECHA-PARA-REPORTE.
+      *----------------------------------------------------------------+
+      *    DD.MM.YYYY -> DD/MM/YYYY
+           MOVE INF-FEC-BLOQ(1:2) TO WS-FECHA-REPORT(1:2) *> DD
+           MOVE INF-FEC-BLOQ(4:2) TO WS-FECHA-REPORT(4:2) *> MM
+           MOVE INF-FEC-BLOQ(7:4) TO WS-FECHA-REPORT(7:4). *> YYYY
+
+      *----------------------------------------------------------------+
+       9000-FINALIZAR.
+      *----------------------------------------------------------------+
+           PERFORM 9100-CERRAR-ARCHIVOS
+           PERFORM 9200-MOSTRAR-DETALLES.
+
+      *----------------------------------------------------------------+
+       9100-CERRAR-ARCHIVOS.
+      *----------------------------------------------------------------+
+           CLOSE FILINP1 FILINP2 FILOUT1 FILOUT2.
+
+      *----------------------------------------------------------------+
+       9200-MOSTRAR-DETALLES.
+      *----------------------------------------------------------------+
+           DISPLAY ' '
+           DISPLAY 'F/H EJECUCION: ' WS-FECHA-DISPLAY" "WS-HORA-DISPLAY
+           DISPLAY '========================================='
+           DISPLAY '             DETALLES PROCESO            '
+           DISPLAY '========================================='
+           DISPLAY 'REG. LEIDOS FILINP1 = ' COUNT-FILINP1
+           DISPLAY 'REG. LEIDOS FILINP2 = ' COUNT-FILINP2
+           DISPLAY 'REG. GRABAD FILOUT1 = ' COUNT-FILOUT1
+           DISPLAY 'REG. GRABAD FILOUT2 = ' COUNT-FILOUT2
+           DISPLAY 'MATCHES ENCONTRADOS = ' COUNT-MATCHES
+           DISPLAY ' '.
