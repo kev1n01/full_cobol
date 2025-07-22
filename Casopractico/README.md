@@ -1,5 +1,5 @@
 *******************************************************************
-                        ARCHIVOS DE ENTRADA:
+                        ARCHIVOS DE ENTRADA
 *******************************************************************
 FILE FILINP1.txt - informacion de cuenta
 *******************************************************************
@@ -32,7 +32,7 @@ ENTRADA ESPERADA:
   INF-COD-BLOQ: 50
 
 *******************************************************************
-                        ARCHIVOS DE SALIDA:
+                        ARCHIVOS DE SALIDA
 *******************************************************************
 FILE FILOUT1.txt
 *******************************************************************
@@ -72,3 +72,41 @@ SALIDA ESPERADA:
   REP-PAN: 4547751253080048
   REP-FEC-BLOQ: 02/05/2025
   REP-DES-BLOQ: BLOQUEO REEMISION REZAGO
+
+
+*******************************************************************
+                      LOGICA DE PROCESAMIENTO
+*******************************************************************
+- DEFINIR VARIABLES PARA EL MANEJO DE FECHAS
+- DEFINIR UNA TABLA (VARIABLE) OCCURS ALMACENADA POR INDICE PARA FILINP1
+- OBTENER FECHA ACTUAL  Y CALCULAR FECHA HACE UN MES USANDO LA FUNCION INTERGER-OF-DATE Y DATE-OF-INTEGER
+- ABRIR LOS ARCHIVOS
+- CARGAR REGISTROS DE FILINP1 A TABLA OCCURS INDEXADA
+- LEER FILINP2
+- BUSQAR POR PAN EN TABLA OCCURS
+  SI HAY UN MATCH EVALUAR PARA FILOUT1
+  -> CONDICION: SI EL CODIGO DE MARCA ES IGUAL A 01  
+  -> OBTENER DESCRICION DE MARCA Y BLOQUEO
+  -> MOVER OTROS DATOS
+  -> ESCRIBIR 
+  SI HAY UN MATCH EVALUAR PARA FILOUT2  
+  ->  PRIMERA CONDICION: CODIGO DE BLOQUE != 00 
+  ->  SEGUNDA CONDICION: QUE LA FECHA-HACE-UN-MES <= FECHA DE BLOQUEO <= FECHA ACTUAL (HOY)  
+  -> FORMATEAR FECHA DE BLOQUEO DE DD.MM.YYYY A DD/MM/YYYY
+  -> OBTENER DESCRICION BLOQUEO
+  -> MOVER OTROS DATOS
+  -> ESCRIBIR 
+
+*******************************************************************
+                           POSIBLES MEJORAS
+*******************************************************************
+
+- HACER UN PERFORM VARYING EN PARRAFO 3200-BUSCAR-CUENTA-POR-PAN
+
+
+*******************************************************************
+                           PENDIENTES
+*******************************************************************
+- PROGRAMAR UN JOB EN JCL EN MAINFRAME Y EJECUTAR LA RUTINA
+- PASAR COMO VARIABLE LA LONGITUD DE REGISTROS DEL ARCHIVO CUENTA DE TARJETA O FILINP1 CON JCL PARA NO TENER QUE HACER MANUALMENTE EN EL OCCURS
+
